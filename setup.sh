@@ -9,7 +9,7 @@ sudo apt update && sudo apt full-upgrade -y
 # Tmux: Terminal multiplexer
 # Zsh/Oh-My-Zsh: Better shell experience
 echo "[+] Installing Essentials..."
-sudo apt install -y terminator tmux neovim git curl wget jq python3-pip
+sudo apt install -y tmux neovim git curl wget jq python3-pip
 
 # 3. Install Industry Standard Network Tools (Active Directory/Infrastructure)
 echo "[+] Installing Network Tools..."
@@ -21,7 +21,6 @@ sudo apt install -y pipx
 pipx ensurepath
 pipx install crackmapexec
 pipx install impacket 
-pipx install certipy-ad
 
 # 5. Clone GitHub Repositories (Tools not in apt)
 # Create a /opt/tools directory for manual installs
@@ -30,12 +29,31 @@ sudo mkdir -p /opt/tools
 sudo chown $USER:$USER /opt/tools
 cd /opt/tools
 
-git clone https://github.com/lgandx/Responder.git
-
 git clone https://github.com/carlospolop/PEASS-ng.git
+
+git clone https://github.com/flozz/p0wny-shell.git
 
 # 6. Setup Wordlists (Extract Rockyou)
 echo "[+] Unzipping Rockyou..."
 sudo gzip -d /usr/share/wordlists/rockyou.txt.gz
 
+# 7. Configure Neo4j for BloodHound
+echo "[+] Configuring Neo4j for BloodHound..."
+# Disable auth temporarily to set password programmatically
+sudo sed -i 's/#dbms.security.auth_enabled=false/dbms.security.auth_enabled=false/' /etc/neo4j/neo4j.conf
+
+# Start Neo4j
+sudo systemctl start neo4j
+echo "[+] Waiting for Neo4j to start..."
+sleep 10
+
+# Set the password using Cypher query (change 'NewStrongPassword123' as needed)
+echo "[+] Setting Neo4j password..."
+cypher-shell -u neo4j -p neo4j "CALL dbms.security.changePassword('NewStrongPassword123');" 2>/dev/null
+
+# Re-enable auth
+sudo sed -i 's/dbms.security.auth_enabled=false/#dbms.security.auth_enabled=false/' /etc/neo4j/neo4j.conf
+sudo systemctl restart neo4j
+
+echo "[+] Neo4j configured. Login credentials -> neo4j:NewStrongPassword123"
 echo "[+] Setup Complete! Please reboot."
