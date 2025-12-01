@@ -4,25 +4,39 @@
 echo "[+] Updating System..."
 sudo apt update && sudo apt full-upgrade -y
 
-# 2. Install "Quality of Life" Tools
+# 2. Disable Sleep and Auto-Logout
+echo "[+] Disabling Sleep and Auto-Logout..."
+# Disable automatic suspend (AC power)
+gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type 'nothing'
+# Disable automatic suspend (battery power)
+gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-battery-type 'nothing'
+# Disable screen blank
+gsettings set org.gnome.desktop.session idle-delay 0
+# Disable automatic screen lock
+gsettings set org.gnome.desktop.screensaver lock-enabled false
+gsettings set org.gnome.desktop.screensaver idle-activation-enabled false
+# Disable power button suspend
+gsettings set org.gnome.settings-daemon.plugins.power power-button-action 'nothing'
+
+# 3. Install "Quality of Life" Tools
 # Terminator: Better terminal management
 # Tmux: Terminal multiplexer
 # Zsh/Oh-My-Zsh: Better shell experience
 echo "[+] Installing Essentials..."
 sudo apt install -y tmux neovim git curl wget jq python3-pip
 
-# 3. Install Industry Standard Network Tools (Active Directory/Infrastructure)
+# 4. Install Industry Standard Network Tools (Active Directory/Infrastructure)
 echo "[+] Installing Network Tools..."
 sudo apt install -y feroxbuster seclists bloodhound neo4j
 
-# 4. Install Python Tools via Pip (pipx is recommended on newer Kali)
+# 5. Install Python Tools via Pip (pipx is recommended on newer Kali)
 echo "[+] Installing Python Tools..."
 sudo apt install -y pipx
 pipx ensurepath
 pipx install crackmapexec
 pipx install impacket 
 
-# 5. Clone GitHub Repositories (Tools not in apt)
+# 6. Clone GitHub Repositories (Tools not in apt)
 # Create a /opt/tools directory for manual installs
 echo "[+] Cloning GitHub Repos to /opt/tools..."
 sudo mkdir -p /opt/tools
@@ -33,27 +47,12 @@ git clone https://github.com/carlospolop/PEASS-ng.git
 
 git clone https://github.com/flozz/p0wny-shell.git
 
-# 6. Setup Wordlists (Extract Rockyou)
+echo "[+] Installing Burpsuite Professional..."
+wget -qO- https://raw.githubusercontent.com/xiv3r/Burpsuite-Professional/main/install.sh | sudo bash
+
+# 7. Setup Wordlists (Extract Rockyou)
 echo "[+] Unzipping Rockyou..."
 sudo gzip -d /usr/share/wordlists/rockyou.txt.gz
 
-# 7. Configure Neo4j for BloodHound
-echo "[+] Configuring Neo4j for BloodHound..."
-# Disable auth temporarily to set password programmatically
-sudo sed -i 's/#dbms.security.auth_enabled=false/dbms.security.auth_enabled=false/' /etc/neo4j/neo4j.conf
 
-# Start Neo4j
-sudo systemctl start neo4j
-echo "[+] Waiting for Neo4j to start..."
-sleep 10
-
-# Set the password using Cypher query (change 'NewStrongPassword123' as needed)
-echo "[+] Setting Neo4j password..."
-cypher-shell -u neo4j -p neo4j "CALL dbms.security.changePassword('NewStrongPassword123');" 2>/dev/null
-
-# Re-enable auth
-sudo sed -i 's/dbms.security.auth_enabled=false/#dbms.security.auth_enabled=false/' /etc/neo4j/neo4j.conf
-sudo systemctl restart neo4j
-
-echo "[+] Neo4j configured. Login credentials -> neo4j:NewStrongPassword123"
 echo "[+] Setup Complete! Please reboot."
